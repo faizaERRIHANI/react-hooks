@@ -169,6 +169,7 @@ du composant (ou du hook). Quel problème cela provoquerait-il ?
 Placer un fetch() directement dans le corps du composant provoquerait un appel réseau à chaque rendu (y compris lors des changements d’état sans rapport avec les données).
 Cela génère des requêtes inutiles, peut créer des boucles infinies (si l’appel modifie l’état, ce qui redéclenche le rendu, donc un nouvel appel).
 useEffect permet de contrôler quand l’effet se produit, grâce au tableau de dépendances.
+
 ---
 
 ### Q3.2 — Quel est le rôle du tableau de dépendances `[searchQuery, page]` ?
