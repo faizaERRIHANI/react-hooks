@@ -129,14 +129,14 @@ Coller ici la partie JSX du `.map()` dans `ProductList`.
 
 ```jsx
 // RÉPONSE Q2.2 — votre map ici
-
-
-```
 {products.map(product => (
   <div className="col" key={product.id}>
     <ProductCard product={product} onAddToCart={addToCart} />
   </div>
 ))}
+
+```
+
 ---
 
 ### Q2.3 — Capture d'écran : la grille avec le produit fictif
