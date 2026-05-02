@@ -1,4 +1,7 @@
 import { useState } from 'react'
+import { useDebounce } from './hooks/useDebounce'
+
+const debouncedQuery = useDebounce(searchQuery, 400)
 
 function App() {
   const [searchQuery, setSearchQuery] = useState('')
