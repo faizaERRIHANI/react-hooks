@@ -89,7 +89,7 @@ Cliquer sur le bouton « Panier » puis sur « Fermer ».
 Joindre une capture montrant la modale ouverte (panier vide).
 
 <!-- RÉPONSE Q1.3 — insérer l'image ci-dessous -->
-![Modale ouverte](docs/screenshots/step1-modal.png)
+![Modale ouverte](docs/screenshots/step1-modal.PNG)
 
 ---
 
