@@ -63,6 +63,9 @@ Expliquer en 2-3 phrases le rôle de `useState` et pourquoi React nécessite ce
 hook plutôt qu'une simple variable JavaScript.
 
 <!-- RÉPONSE Q1.1 -->
+useState est un hook React qui permet d'ajouter un état local à un composant fonctionnel.
+Il retourne un tableau [valeur, setter] : la valeur persiste entre les rendus, et le setter déclenche un nouveau rendu lorsqu’on l’appelle.
+Contrairement à une simple variable JavaScript, les changements d’état via useState sont pris en compte par React pour mettre à jour l’interface utilisateur.
 
 ---
 
@@ -72,6 +75,9 @@ Coller ici l'extrait de code correspondant aux trois déclarations d'état dans 
 
 ```jsx
 // RÉPONSE Q1.2 — vos trois useState ici
+const [searchQuery, setSearchQuery] = useState('')
+const [isCartOpen, setIsCartOpen] = useState(false)
+const [page, setPage] = useState(1)
 
 ```
 
@@ -112,6 +118,8 @@ et `src/components/ProductList/ProductList.jsx`
 Expliquer en 2-3 phrases. Pourquoi pose-t-il problème quand l'arbre de composants est profond ?
 
 <!-- RÉPONSE Q2.1 -->
+Le props drilling est le fait de transmettre une propriété à travers plusieurs niveaux de composants intermédiaires qui n’en ont pas besoin, uniquement pour qu’elle arrive au composant final qui l’utilise.
+Cela rend le code plus verbeux, moins maintenable et fragilise l’architecture (si un composant intermédiaire est déplacé, la chaîne est cassée).
 
 ---
 
@@ -121,6 +129,11 @@ Coller ici la partie JSX du `.map()` dans `ProductList`.
 
 ```jsx
 // RÉPONSE Q2.2 — votre map ici
+{products.map(product => (
+  <div className="col" key={product.id}>
+    <ProductCard product={product} onAddToCart={addToCart} />
+  </div>
+))}
 
 ```
 
@@ -153,7 +166,9 @@ Expliquer pourquoi on ne peut pas placer un `fetch()` directement dans le corps
 du composant (ou du hook). Quel problème cela provoquerait-il ?
 
 <!-- RÉPONSE Q3.1 -->
-
+Placer un fetch() directement dans le corps du composant provoquerait un appel réseau à chaque rendu (y compris lors des changements d’état sans rapport avec les données).
+Cela génère des requêtes inutiles, peut créer des boucles infinies (si l’appel modifie l’état, ce qui redéclenche le rendu, donc un nouvel appel).
+useEffect permet de contrôler quand l’effet se produit, grâce au tableau de dépendances.
 ---
 
 ### Q3.2 — Quel est le rôle du tableau de dépendances `[searchQuery, page]` ?
@@ -162,14 +177,32 @@ Que se passerait-il si ce tableau était vide `[]` ?
 Et si on l'omettait complètement ?
 
 <!-- RÉPONSE Q3.2 -->
+Tableau vide [] → l’effet ne s’exécute qu’une seule fois après le premier rendu.
 
+Sans tableau → l’effet s’exécute après chaque rendu (équivalent à componentDidUpdate non contrôlé).
+
+[searchQuery, page] → l’effet se réexécute uniquement quand l’une de ces deux valeurs change (exactement ce qu’on souhaite pour recharger les produits).
 ---
 
 ### Q3.3 — Montrer votre implémentation du `useEffect` dans `useProducts`
 
 ```js
 // RÉPONSE Q3.3 — votre useEffect ici
+useEffect(() => {
+  setLoading(true)
+  const skip = (page - 1) * LIMIT
+  const url = searchQuery
+    ? `https://dummyjson.com/products/search?q=${searchQuery}&limit=${LIMIT}&skip=${skip}`
+    : `https://dummyjson.com/products?limit=${LIMIT}&skip=${skip}`
 
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      setProducts(data.products)
+      setTotal(data.total)
+    })
+    .finally(() => setLoading(false))
+}, [searchQuery, page])
 ```
 
 ---
@@ -205,6 +238,10 @@ Décrire ce qui se passerait sans debounce quand l'utilisateur tape rapidement.
 
 <!-- RÉPONSE Q4.1 -->
 
+Le debounce consiste à retarder l’exécution d’une action jusqu’à ce qu’un certain délai de calme soit passé.
+Sans debounce, chaque frappe au clavier déclencherait une requête réseau (ex: "p" → 1 requête, "ph" → 2ème, "pho" → 3ème…).
+Avec debounce (400 ms), quand l’utilisateur tape rapidement, seule la dernière requête (après la pause) est envoyée, ce qui évite de surcharger l’API et améliore les performances.
+
 ---
 
 ### Q4.2 — Quel est le rôle de la fonction de nettoyage (cleanup) retournée par `useEffect` ?
@@ -213,13 +250,31 @@ Expliquer pourquoi `return () => clearTimeout(timer)` est indispensable dans ce 
 
 <!-- RÉPONSE Q4.2 -->
 
+La fonction return () => clearTimeout(timer) annule le timer précédent avant d’en créer un nouveau.
+Si on ne nettoyait pas, plusieurs timers s’accumuleraient et exécuteraient tous setDebouncedValue après le délai, ce qui produirait des résultats incohérents et une fuite mémoire.
+C’est le mécanisme standard pour gérer les effets asynchrones annulables (timers, aborts de fetch, etc.).
+
 ---
 
 ### Q4.3 — Montrer votre implémentation complète de `useDebounce`
 
 ```js
 // RÉPONSE Q4.3 — useDebounce complet
+import { useState, useEffect } from 'react'
 
+export function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value)
+    }, delay)
+
+    return () => clearTimeout(timer)
+  }, [value, delay])
+
+  return debouncedValue
+}
 ```
 
 ---
@@ -257,6 +312,12 @@ Quel problème survient si ces fonctions sont recréées à chaque rendu ?
 En quoi cela est-il particulièrement problématique quand elles sont passées via un contexte ?
 
 <!-- RÉPONSE Q5.1 -->
+Sans useCallback, ces fonctions seraient recréées à chaque rendu du composant qui appelle useCart.
+Cela poserait deux problèmes :
+
+1.Performance inutile – recréation d’objets identiques.
+2.Rendus enfants indésirables – si ces fonctions sont passées via CartContext, tous les composants consommateurs du contexte (NavBar, ProductList, CartModal) seraient re-rendus à chaque changement d’état du panier, car la référence de la fonction change (même si son comportement est identique).
+useCallback garantit la stabilité de la référence tant que les dépendances ne changent pas.
 
 ---
 
@@ -265,6 +326,12 @@ En quoi cela est-il particulièrement problématique quand elles sont passées v
 Quelle est la différence entre `useMemo` et `useCallback` ?
 
 <!-- RÉPONSE Q5.2 -->
+useMemo mémorise le résultat d’un calcul coûteux (ici le calcul du nombre d’articles et du total) et ne le recalcule que lorsque les dépendances (cartItems) changent.
+Sans cela, à chaque rendu du panier, on recalculerait la somme, ce qui est inutile.
+Différence :
+
+-useCallback mémorise une fonction.
+-useMemo mémorise une valeur (résultat de fonction).
 
 ---
 
@@ -275,7 +342,19 @@ que d'ajouter un doublon.
 
 ```js
 // RÉPONSE Q5.3 — addToCart avec useCallback
-
+const addToCart = useCallback((product) => {
+  setCartItems(prev => {
+    const existing = prev.find(item => item.id === product.id)
+    if (existing) {
+      return prev.map(item =>
+        item.id === product.id
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
+      )
+    }
+    return [...prev, { ...product, quantity: 1 }]
+  })
+}, [])
 ```
 
 ---
@@ -308,6 +387,15 @@ Tracer le chemin qu'aurait dû suivre `addToCart` sans contexte (de `App` jusqu'
 Comparer avec le chemin avec `useContext`.
 
 <!-- RÉPONSE Q6.1 -->
+Sans contexte :
+App → ProductList → ProductCard (transmettre addToCart) → ProductCard reçoit la prop.
+Pour NavBar : App → NavBar (transmettre cartCount).
+Pour CartModal : App → CartModal (transmettre cartItems, remove…).
+Tous ces composants intermédiaires (comme ProductList) devraient propager des props qu’ils n’utilisent pas.
+
+Avec useContext :
+Les composants consommateurs (NavBar, ProductList, CartModal) appellent directement useCartContext() là où ils en ont besoin.
+Plus aucun drilling. C’est plus propre, plus facile à refactoriser.
 
 ---
 
@@ -315,6 +403,7 @@ Comparer avec le chemin avec `useContext`.
 
 ```jsx
 // RÉPONSE Q6.2 — destructuration depuis useCartContext()
+const { cartItems, removeFromCart, clearCart, cartTotal } = useCartContext()
 
 ```
 
@@ -326,6 +415,15 @@ Coller ici le JSX d'un `<li>` de la liste, avec le titre, la quantité, le prix 
 
 ```jsx
 // RÉPONSE Q6.3 — JSX d'un article du panier
+{cartItems.map(item => (
+  <li key={item.id} className="list-group-item d-flex justify-content-between align-items-center">
+    <span>{item.title} × {item.quantity}</span>
+    <span>
+      {(item.price * item.quantity).toFixed(2)} €
+      <button className="btn btn-sm btn-danger ms-2" onClick={() => removeFromCart(item.id)}>✕</button>
+    </span>
+  </li>
+))}
 
 ```
 
@@ -354,20 +452,23 @@ Vérifier l'ensemble des fonctionnalités et soigner les cas limites.
 
 Cocher chaque case après vérification :
 
-- [ ] La recherche est débouncée (une seule requête après 400 ms de pause)
-- [ ] La pagination fonctionne en mode navigation (sans recherche)
-- [ ] Ajouter le même produit deux fois → la quantité s'incrémente (pas de doublon)
-- [ ] Le panier est restauré après rafraîchissement de la page (F5)
-- [ ] Le badge de la NavBar affiche le nombre total d'articles correct
-- [ ] La suppression d'un article met à jour le badge et le total
-- [ ] « Vider le panier » vide la liste et le localStorage
-- [ ] Le total affiché dans la modale est correct
+- [x] La recherche est débouchée (une seule requête après 400 ms de pause)
+- [x] La pagination fonctionne en mode navigation (sans recherche)
+- [x] Ajouter le même produit deux fois → la quantité s'incrémente (pas de doublon)
+- [x] Le panier est restauré après rafraîchissement de la page (F5)
+- [x] Le badge de la NavBar affiche le nombre total d'articles correct
+- [x] La suppression d'un article met à jour le badge et le total
+- [x] « Vider le panier » vide la liste et le localStorage
+- [x] Le total affiché dans la modale est correct
 
 ---
 
 ### Q7.1 — Bilan : quel hook vous a semblé le plus difficile à comprendre et pourquoi ?
 
 <!-- RÉPONSE Q7.1 -->
+
+Le hook le plus difficile à comprendre initialement était useCallback car il ne change pas le comportement visible de l’application, mais agit sur la performance et la stabilité des références.
+Il a fallu comprendre la notion de fermeture (closure) et d’égalité référentielle pour saisir pourquoi une fonction non stabilisée peut causer des rendus superflus dans les composants enfants ou dans le contexte.
 
 ---
 
