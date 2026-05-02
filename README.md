@@ -237,9 +237,11 @@ Passer `debouncedQuery` (et non `searchQuery`) à `ProductList`.
 Décrire ce qui se passerait sans debounce quand l'utilisateur tape rapidement.
 
 <!-- RÉPONSE Q4.1 -->
+
 Le debounce consiste à retarder l’exécution d’une action jusqu’à ce qu’un certain délai de calme soit passé.
 Sans debounce, chaque frappe au clavier déclencherait une requête réseau (ex: "p" → 1 requête, "ph" → 2ème, "pho" → 3ème…).
 Avec debounce (400 ms), quand l’utilisateur tape rapidement, seule la dernière requête (après la pause) est envoyée, ce qui évite de surcharger l’API et améliore les performances.
+
 ---
 
 ### Q4.2 — Quel est le rôle de la fonction de nettoyage (cleanup) retournée par `useEffect` ?
@@ -247,9 +249,11 @@ Avec debounce (400 ms), quand l’utilisateur tape rapidement, seule la dernièr
 Expliquer pourquoi `return () => clearTimeout(timer)` est indispensable dans ce cas précis.
 
 <!-- RÉPONSE Q4.2 -->
+
 La fonction return () => clearTimeout(timer) annule le timer précédent avant d’en créer un nouveau.
 Si on ne nettoyait pas, plusieurs timers s’accumuleraient et exécuteraient tous setDebouncedValue après le délai, ce qui produirait des résultats incohérents et une fuite mémoire.
 C’est le mécanisme standard pour gérer les effets asynchrones annulables (timers, aborts de fetch, etc.).
+
 ---
 
 ### Q4.3 — Montrer votre implémentation complète de `useDebounce`
@@ -312,9 +316,9 @@ Sans useCallback, ces fonctions seraient recréées à chaque rendu du composant
 Cela poserait deux problèmes :
 
 1.Performance inutile – recréation d’objets identiques.
-
 2.Rendus enfants indésirables – si ces fonctions sont passées via CartContext, tous les composants consommateurs du contexte (NavBar, ProductList, CartModal) seraient re-rendus à chaque changement d’état du panier, car la référence de la fonction change (même si son comportement est identique).
 useCallback garantit la stabilité de la référence tant que les dépendances ne changent pas.
+
 ---
 
 ### Q5.2 — Pourquoi utiliser `useMemo` pour `cartCount` et `cartTotal` ?
@@ -326,9 +330,9 @@ useMemo mémorise le résultat d’un calcul coûteux (ici le calcul du nombre d
 Sans cela, à chaque rendu du panier, on recalculerait la somme, ce qui est inutile.
 Différence :
 
-useCallback mémorise une fonction.
+-useCallback mémorise une fonction.
+-useMemo mémorise une valeur (résultat de fonction).
 
-useMemo mémorise une valeur (résultat de fonction).
 ---
 
 ### Q5.3 — Montrer votre implémentation de `addToCart` avec `useCallback`
@@ -338,7 +342,19 @@ que d'ajouter un doublon.
 
 ```js
 // RÉPONSE Q5.3 — addToCart avec useCallback
-
+const addToCart = useCallback((product) => {
+  setCartItems(prev => {
+    const existing = prev.find(item => item.id === product.id)
+    if (existing) {
+      return prev.map(item =>
+        item.id === product.id
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
+      )
+    }
+    return [...prev, { ...product, quantity: 1 }]
+  })
+}, [])
 ```
 
 ---
@@ -371,6 +387,15 @@ Tracer le chemin qu'aurait dû suivre `addToCart` sans contexte (de `App` jusqu'
 Comparer avec le chemin avec `useContext`.
 
 <!-- RÉPONSE Q6.1 -->
+Sans contexte :
+App → ProductList → ProductCard (transmettre addToCart) → ProductCard reçoit la prop.
+Pour NavBar : App → NavBar (transmettre cartCount).
+Pour CartModal : App → CartModal (transmettre cartItems, remove…).
+Tous ces composants intermédiaires (comme ProductList) devraient propager des props qu’ils n’utilisent pas.
+
+Avec useContext :
+Les composants consommateurs (NavBar, ProductList, CartModal) appellent directement useCartContext() là où ils en ont besoin.
+Plus aucun drilling. C’est plus propre, plus facile à refactoriser.
 
 ---
 
@@ -378,6 +403,7 @@ Comparer avec le chemin avec `useContext`.
 
 ```jsx
 // RÉPONSE Q6.2 — destructuration depuis useCartContext()
+const { cartItems, removeFromCart, clearCart, cartTotal } = useCartContext()
 
 ```
 
@@ -389,6 +415,15 @@ Coller ici le JSX d'un `<li>` de la liste, avec le titre, la quantité, le prix 
 
 ```jsx
 // RÉPONSE Q6.3 — JSX d'un article du panier
+{cartItems.map(item => (
+  <li key={item.id} className="list-group-item d-flex justify-content-between align-items-center">
+    <span>{item.title} × {item.quantity}</span>
+    <span>
+      {(item.price * item.quantity).toFixed(2)} €
+      <button className="btn btn-sm btn-danger ms-2" onClick={() => removeFromCart(item.id)}>✕</button>
+    </span>
+  </li>
+))}
 
 ```
 
@@ -431,6 +466,9 @@ Cocher chaque case après vérification :
 ### Q7.1 — Bilan : quel hook vous a semblé le plus difficile à comprendre et pourquoi ?
 
 <!-- RÉPONSE Q7.1 -->
+
+Le hook le plus difficile à comprendre initialement était useCallback car il ne change pas le comportement visible de l’application, mais agit sur la performance et la stabilité des références.
+Il a fallu comprendre la notion de fermeture (closure) et d’égalité référentielle pour saisir pourquoi une fonction non stabilisée peut causer des rendus superflus dans les composants enfants ou dans le contexte.
 
 ---
 
