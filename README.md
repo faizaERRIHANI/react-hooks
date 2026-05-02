@@ -237,7 +237,9 @@ Passer `debouncedQuery` (et non `searchQuery`) à `ProductList`.
 Décrire ce qui se passerait sans debounce quand l'utilisateur tape rapidement.
 
 <!-- RÉPONSE Q4.1 -->
-
+Le debounce consiste à retarder l’exécution d’une action jusqu’à ce qu’un certain délai de calme soit passé.
+Sans debounce, chaque frappe au clavier déclencherait une requête réseau (ex: "p" → 1 requête, "ph" → 2ème, "pho" → 3ème…).
+Avec debounce (400 ms), quand l’utilisateur tape rapidement, seule la dernière requête (après la pause) est envoyée, ce qui évite de surcharger l’API et améliore les performances.
 ---
 
 ### Q4.2 — Quel est le rôle de la fonction de nettoyage (cleanup) retournée par `useEffect` ?
@@ -245,14 +247,30 @@ Décrire ce qui se passerait sans debounce quand l'utilisateur tape rapidement.
 Expliquer pourquoi `return () => clearTimeout(timer)` est indispensable dans ce cas précis.
 
 <!-- RÉPONSE Q4.2 -->
-
+La fonction return () => clearTimeout(timer) annule le timer précédent avant d’en créer un nouveau.
+Si on ne nettoyait pas, plusieurs timers s’accumuleraient et exécuteraient tous setDebouncedValue après le délai, ce qui produirait des résultats incohérents et une fuite mémoire.
+C’est le mécanisme standard pour gérer les effets asynchrones annulables (timers, aborts de fetch, etc.).
 ---
 
 ### Q4.3 — Montrer votre implémentation complète de `useDebounce`
 
 ```js
 // RÉPONSE Q4.3 — useDebounce complet
+import { useState, useEffect } from 'react'
 
+export function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value)
+    }, delay)
+
+    return () => clearTimeout(timer)
+  }, [value, delay])
+
+  return debouncedValue
+}
 ```
 
 ---
@@ -290,7 +308,13 @@ Quel problème survient si ces fonctions sont recréées à chaque rendu ?
 En quoi cela est-il particulièrement problématique quand elles sont passées via un contexte ?
 
 <!-- RÉPONSE Q5.1 -->
+Sans useCallback, ces fonctions seraient recréées à chaque rendu du composant qui appelle useCart.
+Cela poserait deux problèmes :
 
+1.Performance inutile – recréation d’objets identiques.
+
+2.Rendus enfants indésirables – si ces fonctions sont passées via CartContext, tous les composants consommateurs du contexte (NavBar, ProductList, CartModal) seraient re-rendus à chaque changement d’état du panier, car la référence de la fonction change (même si son comportement est identique).
+useCallback garantit la stabilité de la référence tant que les dépendances ne changent pas.
 ---
 
 ### Q5.2 — Pourquoi utiliser `useMemo` pour `cartCount` et `cartTotal` ?
@@ -298,7 +322,13 @@ En quoi cela est-il particulièrement problématique quand elles sont passées v
 Quelle est la différence entre `useMemo` et `useCallback` ?
 
 <!-- RÉPONSE Q5.2 -->
+useMemo mémorise le résultat d’un calcul coûteux (ici le calcul du nombre d’articles et du total) et ne le recalcule que lorsque les dépendances (cartItems) changent.
+Sans cela, à chaque rendu du panier, on recalculerait la somme, ce qui est inutile.
+Différence :
 
+useCallback mémorise une fonction.
+
+useMemo mémorise une valeur (résultat de fonction).
 ---
 
 ### Q5.3 — Montrer votre implémentation de `addToCart` avec `useCallback`
