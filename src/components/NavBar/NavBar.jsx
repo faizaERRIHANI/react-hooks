@@ -20,12 +20,12 @@ export default function NavBar({ searchQuery, onSearchChange, onCartClick }) {
       </span>
 
       <input
-        type="search"
-        className="form-control w-50"
-        placeholder="Rechercher un produit..."
-        value={searchQuery}
-        onChange={(e) => onSearchChange(e.target.value)}
-      />
+  type="text"
+  className="form-control"
+  placeholder="Rechercher un produit..."
+  value={searchQuery}
+  onChange={onSearchChange}
+/>
 
       <button
         className="btn btn-outline-light position-relative"
