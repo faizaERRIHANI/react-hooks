@@ -166,7 +166,9 @@ Expliquer pourquoi on ne peut pas placer un `fetch()` directement dans le corps
 du composant (ou du hook). Quel problème cela provoquerait-il ?
 
 <!-- RÉPONSE Q3.1 -->
-
+Placer un fetch() directement dans le corps du composant provoquerait un appel réseau à chaque rendu (y compris lors des changements d’état sans rapport avec les données).
+Cela génère des requêtes inutiles, peut créer des boucles infinies (si l’appel modifie l’état, ce qui redéclenche le rendu, donc un nouvel appel).
+useEffect permet de contrôler quand l’effet se produit, grâce au tableau de dépendances.
 ---
 
 ### Q3.2 — Quel est le rôle du tableau de dépendances `[searchQuery, page]` ?
@@ -175,14 +177,32 @@ Que se passerait-il si ce tableau était vide `[]` ?
 Et si on l'omettait complètement ?
 
 <!-- RÉPONSE Q3.2 -->
+Tableau vide [] → l’effet ne s’exécute qu’une seule fois après le premier rendu.
 
+Sans tableau → l’effet s’exécute après chaque rendu (équivalent à componentDidUpdate non contrôlé).
+
+[searchQuery, page] → l’effet se réexécute uniquement quand l’une de ces deux valeurs change (exactement ce qu’on souhaite pour recharger les produits).
 ---
 
 ### Q3.3 — Montrer votre implémentation du `useEffect` dans `useProducts`
 
 ```js
 // RÉPONSE Q3.3 — votre useEffect ici
+useEffect(() => {
+  setLoading(true)
+  const skip = (page - 1) * LIMIT
+  const url = searchQuery
+    ? `https://dummyjson.com/products/search?q=${searchQuery}&limit=${LIMIT}&skip=${skip}`
+    : `https://dummyjson.com/products?limit=${LIMIT}&skip=${skip}`
 
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      setProducts(data.products)
+      setTotal(data.total)
+    })
+    .finally(() => setLoading(false))
+}, [searchQuery, page])
 ```
 
 ---
