@@ -63,6 +63,9 @@ Expliquer en 2-3 phrases le rôle de `useState` et pourquoi React nécessite ce
 hook plutôt qu'une simple variable JavaScript.
 
 <!-- RÉPONSE Q1.1 -->
+useState est un hook React qui permet d'ajouter un état local à un composant fonctionnel.
+Il retourne un tableau [valeur, setter] : la valeur persiste entre les rendus, et le setter déclenche un nouveau rendu lorsqu’on l’appelle.
+Contrairement à une simple variable JavaScript, les changements d’état via useState sont pris en compte par React pour mettre à jour l’interface utilisateur.
 
 ---
 
@@ -72,6 +75,9 @@ Coller ici l'extrait de code correspondant aux trois déclarations d'état dans 
 
 ```jsx
 // RÉPONSE Q1.2 — vos trois useState ici
+const [searchQuery, setSearchQuery] = useState('')
+const [isCartOpen, setIsCartOpen] = useState(false)
+const [page, setPage] = useState(1)
 
 ```
 
@@ -112,6 +118,8 @@ et `src/components/ProductList/ProductList.jsx`
 Expliquer en 2-3 phrases. Pourquoi pose-t-il problème quand l'arbre de composants est profond ?
 
 <!-- RÉPONSE Q2.1 -->
+Le props drilling est le fait de transmettre une propriété à travers plusieurs niveaux de composants intermédiaires qui n’en ont pas besoin, uniquement pour qu’elle arrive au composant final qui l’utilise.
+Cela rend le code plus verbeux, moins maintenable et fragilise l’architecture (si un composant intermédiaire est déplacé, la chaîne est cassée).
 
 ---
 
@@ -122,8 +130,13 @@ Coller ici la partie JSX du `.map()` dans `ProductList`.
 ```jsx
 // RÉPONSE Q2.2 — votre map ici
 
-```
 
+```
+{products.map(product => (
+  <div className="col" key={product.id}>
+    <ProductCard product={product} onAddToCart={addToCart} />
+  </div>
+))}
 ---
 
 ### Q2.3 — Capture d'écran : la grille avec le produit fictif
