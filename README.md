@@ -452,14 +452,14 @@ Vérifier l'ensemble des fonctionnalités et soigner les cas limites.
 
 Cocher chaque case après vérification :
 
-- [ ] La recherche est débouncée (une seule requête après 400 ms de pause)
-- [ ] La pagination fonctionne en mode navigation (sans recherche)
-- [ ] Ajouter le même produit deux fois → la quantité s'incrémente (pas de doublon)
-- [ ] Le panier est restauré après rafraîchissement de la page (F5)
-- [ ] Le badge de la NavBar affiche le nombre total d'articles correct
-- [ ] La suppression d'un article met à jour le badge et le total
-- [ ] « Vider le panier » vide la liste et le localStorage
-- [ ] Le total affiché dans la modale est correct
+- [x] La recherche est débouchée (une seule requête après 400 ms de pause)
+- [x] La pagination fonctionne en mode navigation (sans recherche)
+- [x] Ajouter le même produit deux fois → la quantité s'incrémente (pas de doublon)
+- [x] Le panier est restauré après rafraîchissement de la page (F5)
+- [x] Le badge de la NavBar affiche le nombre total d'articles correct
+- [x] La suppression d'un article met à jour le badge et le total
+- [x] « Vider le panier » vide la liste et le localStorage
+- [x] Le total affiché dans la modale est correct
 
 ---
 
